@@ -1,0 +1,31 @@
+<annotation>
+<folder>KITTI</folder>
+<filename>JYZC (566).png</filename>
+<source>
+<database>The KITTI Database</database>
+<annotation>KITTI</annotation>
+</source>
+<size>
+<width>300</width>
+<height>300</height>
+<depth>3</depth>
+</size>
+<object>
+<name>insulator</name>
+<bndbox>
+<xmin>212</xmin>
+<ymin>54</ymin>
+<xmax>248</xmax>
+<ymax>203</ymax>
+</bndbox>
+</object>
+<object>
+<name>insulator</name>
+<bndbox>
+<xmin>28</xmin>
+<ymin>62</ymin>
+<xmax>77</xmax>
+<ymax>215</ymax>
+</bndbox>
+</object>
+</annotation>
