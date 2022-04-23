@@ -212,8 +212,11 @@ def decode(loc, priors, variances):
     """
 
     boxes = torch.cat((
+        # 计算先验框调整之后的中心的位置
         priors[:, :2] + loc[:, :2] * variances[0] * priors[:, 2:],
+        # 计算出调整后的先验框的宽和高
         priors[:, 2:] * torch.exp(loc[:, 2:] * variances[1])), 1)
+    # 计算先验框的左上角和右下角
     boxes[:, :2] -= boxes[:, 2:] / 2
     boxes[:, 2:] += boxes[:, :2]
     return boxes
@@ -273,26 +276,17 @@ def nms(boxes, scores, overlap=0.5, top_k=200):
         if idx.size(0) == 1:
             break
         idx = idx[:-1]  # remove kept element from view
-        try:
-            # load bboxes of next highest vals
-            torch.index_select(x1, 0, idx, out=xx1)
-            torch.index_select(y1, 0, idx, out=yy1)
-            torch.index_select(x2, 0, idx, out=xx2)
-            torch.index_select(y2, 0, idx, out=yy2)
-            # store element-wise max with next highest score
-            xx1 = torch.clamp(xx1, min=x1[i])
-            yy1 = torch.clamp(yy1, min=y1[i])
-            xx2 = torch.clamp(xx2, max=x2[i])
-            yy2 = torch.clamp(yy2, max=y2[i])
-        except:
-            xx1 = torch.index_select(x1, 0, idx)
-            yy1 = torch.index_select(y1, 0, idx)
-            xx2 = torch.index_select(x2, 0, idx)
-            yy2 = torch.index_select(y2, 0, idx)
-            xx1 = torch.clamp(xx1, min=x1[i].data)
-            yy1 = torch.clamp(yy1, min=y1[i].data)
-            xx2 = torch.clamp(xx2, max=x2[i].data)
-            yy2 = torch.clamp(yy2, max=y2[i].data)
+
+        # load bboxes of next highest vals
+        xx1 = torch.index_select(x1, 0, idx)  # torch.index_select(x1, 0, idx, out=xx1)
+        yy1 = torch.index_select(y1, 0, idx)
+        xx2 = torch.index_select(x2, 0, idx)
+        yy2 = torch.index_select(y2, 0, idx)
+        # store element-wise max with next highest score
+        xx1 = torch.clamp(xx1, min=x1[i].data)
+        yy1 = torch.clamp(yy1, min=y1[i].data)
+        xx2 = torch.clamp(xx2, max=x2[i].data)
+        yy2 = torch.clamp(yy2, max=y2[i].data)
         w.resize_as_(xx2)
         h.resize_as_(yy2)  # h.resize_as_(yy2)
         w = xx2 - xx1

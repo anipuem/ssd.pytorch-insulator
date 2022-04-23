@@ -14,11 +14,11 @@ import torch.utils.data as data
 from ssd import build_ssd
 
 parser = argparse.ArgumentParser(description='Single Shot MultiBox Detection')
-parser.add_argument('--trained_model', default='weights/ssd300_VOC_500_conv6.pth',
+parser.add_argument('--trained_model', default='weights/ssd300_VOC_11999.pth',
                     type=str, help='Trained state_dict file path to open')
 parser.add_argument('--save_folder', default='eval/', type=str,
                     help='Dir to save results')
-parser.add_argument('--visual_threshold', default=0.6, type=float,
+parser.add_argument('--visual_threshold', default=0.85, type=float,
                     help='Final confidence threshold')
 parser.add_argument('--cuda', default=False, type=bool,
                     help='Use cuda to train model')
@@ -80,7 +80,7 @@ def test_voc():
     # load net
     num_classes = len(VOC_CLASSES) + 1 # +1 background
     net = build_ssd('test', 300, num_classes=2) # initialize SSD
-    net.load_state_dict(torch.load(args.trained_model))
+    net.load_state_dict(torch.load(args.trained_model, map_location='cpu'))   # 默认是GPU
     # net.load_state_dict(torch.load(args.trained_model))
     net.eval()
     print('Finished loading model!')

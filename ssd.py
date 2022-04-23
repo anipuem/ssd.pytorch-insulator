@@ -30,7 +30,7 @@ class SSD(nn.Module):
         super(SSD, self).__init__()
         self.phase = phase
         self.num_classes = num_classes
-        self.cfg = (coco, voc)[num_classes == 2]
+        self.cfg = (coco, voc)[num_classes == 1]
         self.priorbox = PriorBox(self.cfg)
         with torch.no_grad():
             self.priors = Variable(self.priorbox.forward())
@@ -79,7 +79,7 @@ class SSD(nn.Module):
             # print x.shape
 
         s = self.L2Norm(x)
-        print(s.shape)
+        # print(s.shape)
         sources.append(s)
 
         # apply vgg up to fc7
@@ -87,7 +87,7 @@ class SSD(nn.Module):
             # print self.vgg[k]
             x = self.vgg[k](x)
             # print x.shape
-        print(x.shape)
+        # print(x.shape)
         sources.append(x)
 
         # apply extra layers and cache source layer outputs
@@ -96,7 +96,7 @@ class SSD(nn.Module):
             x = F.relu(v(x), inplace=True)
             # print x.shape
             if k % 2 == 1:
-                print(x.shape)
+                # print(x.shape)
                 sources.append(x)
 
         # apply multibox head to source layers
@@ -107,8 +107,8 @@ class SSD(nn.Module):
             loc.append(l(x).permute(0, 2, 3, 1).contiguous())
             conf.append(c(x).permute(0, 2, 3, 1).contiguous())
 
-        for o in loc:
-            print(o.view(o.size(0), -1, 4).shape)
+        # for o in loc:
+        #     print(o.view(o.size(0), -1, 4).shape)
 
         # loc = torch.cat([o.view(o.size(0), -1, 4) for o in loc], 1)
         # print loc.shape
@@ -185,15 +185,17 @@ def add_extras(cfg, i, batch_norm=False):
 
 
 def multibox(vgg, extra_layers, cfg, num_classes):
-    loc_layers = []
-    conf_layers = []
-    vgg_source = [21, -2]
+    loc_layers = []  # 多尺度分支的回归网络
+    conf_layers = []  # 多尺度分支的分类网络
+    vgg_source = [21, -2]  # 第一部分，vgg 网络的 Conv2d-4_3(21层)， Conv2d-7_1(-2层)
     for k, v in enumerate(vgg_source):
+        # 回归 box*4(坐标)
         loc_layers += [nn.Conv2d(vgg[v].out_channels,
                                  cfg[k] * 4, kernel_size=3, padding=1)]
+        # 置信度 box*(num_classes)
         conf_layers += [nn.Conv2d(vgg[v].out_channels,
                         cfg[k] * num_classes, kernel_size=3, padding=1)]
-
+    # 第二部分，cfg从第三个开始作为box的个数，而且用于多尺度提取的网络分别为1,3,5,7层
     for k, v in enumerate(extra_layers[1::2], 2):
         loc_layers += [nn.Conv2d(v.out_channels, cfg[k]
                                  * 4, kernel_size=3, padding=1)]

@@ -26,7 +26,7 @@ VOC_CLASSES = (  # always index 0
     # 'sheep', 'sofa', 'train', 'tvmonitor'
 
 # note: if you used our download scripts, this should be right
-VOC_ROOT = r'C:/Users/Asn/PycharmProjects/ssd.pytorch-insulator/data/VOCdevkit/'  # 数据集地址
+VOC_ROOT = r'./data/VOCdevkit/'  # 数据集地址
 
 
 class VOCAnnotationTransform(object):
@@ -101,12 +101,13 @@ class VOCDetection(data.Dataset):
                  dataset_name='VOC0712'):
         self.root = root
         self.image_set = image_sets
-        self.transform = transform
-        self.target_transform = target_transform
+        self.transform = transform  # 定义图像转换方法，通常有数据增强（data augmentation）和基础变换（base transform）
+        self.target_transform = target_transform  # 定义标签的转换方法
         self.name = dataset_name
         self._annopath = osp.join('%s', 'Annotations', '%s.xml')
         self._imgpath = osp.join(r'%s', r'JPEGImages', r'%s.png')
-        self.ids = list()
+        self.ids = list()  # 记录数据集中的所有图像的名字
+        # 读入数据集中的图像名称，可以依照该名称和_annopath、_imgpath推断出图片、描述文件存储的位置
         for (year, name) in image_sets:
             rootpath = osp.join(self.root, 'VOC' + year)
             for line in open(osp.join(rootpath, 'ImageSets', 'Main', name + '.txt')):
@@ -114,17 +115,14 @@ class VOCDetection(data.Dataset):
 
     def __getitem__(self, index):
         im, gt, h, w = self.pull_item(index)
-
         return im, gt
-
     def __len__(self):
         return len(self.ids)
 
     def pull_item(self, index):
-        img_id = self.ids[index]
-
-        target = ET.parse(self._annopath % img_id).getroot()
-        img = cv2.imread(self._imgpath % img_id)
+        img_id = self.ids[index]  # 获取index对应的img名称
+        target = ET.parse(self._annopath % img_id).getroot()  # target是与图片同名的xml文件中读取进来的标注数据
+        img = cv2.imread(self._imgpath % img_id)  # 读取的RGB图像
         if img.shape[0] != 300 or img.shape[1] != 300:
             print(self._imgpath % img_id + 'size error')
             img = cv2.resize(img, (300, 300))   # ssd要求输入图像为300x300
@@ -136,15 +134,15 @@ class VOCDetection(data.Dataset):
         if self.transform is not None:
             target = np.array(target)
             try:
+                # 对img, boxes, labels分类截取
                 img, boxes, labels = self.transform(img, target[:, :4], target[:, 4])
-                img = img[:, :, (2, 1, 0)]
-                # img = img.transpose(2, 0, 1)
+                img = img[:, :, (2, 1, 0)]  # opencv读入图像的顺序是BGR，该操作将图像转为RGB
                 target = np.hstack((boxes, np.expand_dims(labels, axis=1)))
             except:
-                print('Fault')   # Fault 因为有些img没法被准确提取到
-            # to rgb
+                print('No box in image')   # 图像里没有选框
+        # 返回image、label、宽、高，这里的permute(2,0,1)是将原有的三维（28，28，3）变为（3，28，28）
+        # 将通道数提前，为了统一torch的后续训练操作
         return torch.from_numpy(img).permute(2, 0, 1), target, height, width
-        # return torch.from_numpy(img), target, height, width
 
     def pull_image(self, index):
         '''Returns the original image object at index in PIL form
