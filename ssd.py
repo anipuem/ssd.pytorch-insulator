@@ -29,8 +29,8 @@ class SSD(nn.Module):
     def __init__(self, phase, size, base, extras, head, num_classes):
         super(SSD, self).__init__()
         self.phase = phase
-        self.num_classes = num_classes
-        self.cfg = (coco, voc)[num_classes == 1]
+        self.num_classes = 2
+        self.cfg = (coco, voc)[num_classes == 2]
         self.priorbox = PriorBox(self.cfg)
         with torch.no_grad():
             self.priors = Variable(self.priorbox.forward())
@@ -47,7 +47,7 @@ class SSD(nn.Module):
 
         if phase == 'test':
             self.softmax = nn.Softmax()
-            self.detect = Detect(num_classes, 0, 200, 0.01, 0.45)
+            self.detect = Detect(num_classes, 0, 50, 0.8, 0.2)
 
     def forward(self, x):
         """Applies network layers and ops on input image(s) x.

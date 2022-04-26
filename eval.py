@@ -286,8 +286,8 @@ def voc_eval(detpath,  # Path to detections, detpath.format(classname) should pr
         sorted_ind = np.argsort(-confidence)  # sorted_scores = np.sort(-confidence)-->可以得到从大到小排序的置信度list
         BB = BB[sorted_ind, :]  # 按confidence排序对BB进行排序，（n,4）的矩阵
         image_ids = [image_ids[x] for x in sorted_ind]  # 按confidence对相应的图像的id进行排序
-        print(BB)  # [[135.1 151.5 198.8 400. ] [252.8 214.5 294.9 367.5]]这样子
-        print(BB.shape)  # (5797, 4)
+        # print(BB)  # [[135.1 151.5 198.8 400. ] [252.8 214.5 294.9 367.5]]这样子
+        # print(BB.shape)  # (5797, 4)
         """在这里考虑通过黑色像素占比消除部分选框"""
 
         # 对比GT参数和result，计算出IOU，在fp和tp相应位置标记1
@@ -393,12 +393,29 @@ def test_net(net, dataset):  # 将测试数据集送入net进行推断出来dete
                                   scores[:, np.newaxis])).astype(np.float32,
                                                                  copy=False)
             # clean up the dets
-            num_box = cls_dets.shape[0]
             list_clean_up = []
-            for each_box_index in range(num_box):
-                each_box = cls_dets[each_box_index]
-                if each_box[4] < 0.8:
-                    list_clean_up.append(each_box_index)
+            # impath = r'./data/VOCdevkit/VOC2007/JPEGImages/'+str(dataset.ids[i]).
+            # split(r'\\')[-1].split('\'')[-2] + '.png'
+            # img = cv2.imread(impath)
+            for k in range(cls_dets.shape[0]):
+                img = dataset.pull_image(i)
+                xmin = cls_dets[k, 0]
+                ymin = cls_dets[k, 1]
+                xmax = cls_dets[k, 2]
+                ymax = cls_dets[k, 3]
+                # 裁剪坐标为[y0:y1, x0:x1]
+                if int(min(ymax, h))-int(max(ymin, 0)) < 5 and int(min(xmax, w))-int(max(xmin, 0)) < 5:
+                    list_clean_up.append(k)
+                    continue
+                img = img[int(max(ymin, 0)):int(min(ymax, h)), int(max(xmin, 0)):int(min(xmax, w))]
+                npim = np.zeros((img.shape[0], img.shape[1]), dtype=np.int)
+                # 将图像3个通道相加赋值给空数组
+                npim[:] = img[:, :, 0] + img[:, :, 1] + img[:, :, 2]
+                # 统计黑色像素个数
+                black = len(npim[npim == 0])
+                if black > img.shape[0]*img.shape[1] * 0.75:
+                    list_clean_up.append(k)
+            # numpy.delete(arr,obj,axis=None) obj表示要被删除的子向量，可以是int型list或整数
             cls_dets = np.delete(cls_dets, list_clean_up, axis=0)
             all_boxes[j][i] = cls_dets
             diff_cls_dets.append(np.array(cls_dets))
