@@ -14,7 +14,7 @@ MEANS = (104, 117, 123)
 # SSD300 CONFIGS
 voc = {
     'num_classes': 2,  # 类别数：insulator+1（背景）
-    'lr_steps': (80000, 100000, 120000),
+    'lr_steps': (80000, 100000, 120000),  # 在lr_steps的时候，learning rate会调整=args.lr * (gamma ** (step))
     'max_iter': 8500,  # 迭代次数，可修改 1000-12000
     'feature_maps': [38, 19, 10, 5, 3, 1],  # 一共提取6个特征图，其大小分别为（38，38）、（19，19）、（10，10）、（5，5）、（3，3）、（1，1）
     'min_dim': 300,

@@ -154,7 +154,7 @@ def train():
     # create batch iterator
     # batch_iterator = iter(data_loader)
     batch_iterator = iter(cycle(data_loader))
-    for iteration in range(args.start_iter, cfg['max_iter']):
+    for iteration in range(args.start_iter, cfg['max_iter']):  # 循环训练
         # if args.visdom and iteration != 0 and (iteration % epoch_size == 0):
         #     update_vis_plot(epoch, loc_loss, conf_loss, epoch_plot, None,
         #                     'append', epoch_size)
@@ -163,12 +163,12 @@ def train():
         #     conf_loss = 0
         #     epoch += 1
 
-        if iteration in cfg['lr_steps']:
+        if iteration in cfg['lr_steps']:  # 特定步的时候调整lr
             step_index += 1
             adjust_learning_rate(optimizer, args.gamma, step_index)
 
         # load train data
-        # images, targets = next(batch_iterator)
+        # next() 函数要和生成迭代器的 iter() 函数一起使用，返回下一个iter内对象
         try:
             images, targets = next(batch_iterator)
         except StopIteration:
@@ -179,19 +179,13 @@ def train():
             images = Variable(images.cuda())
             targets = [Variable(ann.cuda(), volatile=True) for ann in targets]
         else:
+            # Variable是PyTorch对象，可以反向传播更新参数
             images = Variable(images)
             targets = [Variable(ann, volatile=True) for ann in targets]
-
-        # print 'images: {}'.format(images.shape)
-        # print images
-        # print 'targets:'
-        # print targets
 
         # forward
         t0 = time.time()
         out = net(images)
-        # print out
-        # print out[0].shape, out[1].shape, out[2].shape
 
         # backprop
         optimizer.zero_grad()
@@ -206,7 +200,7 @@ def train():
         if iteration % 10 == 0:
             print('timer: %.4f sec.' % (t1 - t0))
             # print('iter ' + repr(iteration) + ' || Loss: %.4f ||' % (loss.data[0]), end=' ')
-            print('loc:'+str(loss_l.item())+', conf:'+str(loss_c.item()))
+            print('位置回归LocLoss:'+str(loss_l.item())+', 类别回归confLoss:'+str(loss_c.item()))
             print('iter ' + repr(iteration) + ' || Loss: %.4f ||' % (loss.item()))
             xIteration.append(repr(iteration))
             yLoss.append(loss.item())
@@ -227,17 +221,13 @@ def train():
 
 
 def adjust_learning_rate(optimizer, gamma, step):
-    """Sets the learning rate to the initial LR decayed by 10 at every
-        specified step
-    # Adapted from PyTorch Imagenet example:
-    # https://github.com/pytorch/examples/blob/master/imagenet/main.py
-    """
+    """设置学习速率为初始LR，在特定step每次衰减10"""
     lr = args.lr * (gamma ** (step))
     for param_group in optimizer.param_groups:
         param_group['lr'] = lr
 
 
-def xavier(param):
+def xavier(param):  # 权重初始化
     init.xavier_uniform_(param)
 
 

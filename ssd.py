@@ -241,10 +241,6 @@ if __name__ == '__main__':
 
     model = SSD('train', 300, base_, extras_, head_, 2)  # 2表示2类
 
-    # print model.vgg
-
     input_tensor = torch.rand((1, 3, 300, 300))
     input_variable = torch.autograd.Variable(input_tensor)
     output = model(input_variable)
-
-    # print(output[0].shape, output[1].shape, output[2].shape)
